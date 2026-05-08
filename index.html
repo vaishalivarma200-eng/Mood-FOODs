@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MoodFood - The Magical Mood Chef</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Serif:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+  
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  
+  <script src="config.js"></script>
+  <script>
+    if (typeof CONFIG === 'undefined') {
+      window.CONFIG = { GEMINI_API_KEY: "" };
+    }
+  </script>
+
+  <script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3a165b',      /* Deep dark purple text/buttons */
+            bgLight: '#f6efff',      /* Very soft lavender background */
+            bubbleBg: '#eee3ff',     /* Slightly darker lavender for unselected bubbles */
+            panelBg: '#f2e8ff',      /* Light purple for panels */
+            accent: '#d8c3ff',       /* Highlight purple */
+            textMuted: '#68597a',    /* Gray-purple for descriptions */
+          },
+          fontFamily: {
+            serif: ['"Noto Serif"', 'serif'],
+            sans: ['"Be Vietnam Pro"', 'sans-serif'],
+          },
+          boxShadow: {
+            'soft': '0 8px 30px rgba(58, 22, 91, 0.08)',
+            'card': '0 4px 20px rgba(0,0,0, 0.05)',
+            'nav': '0 -4px 20px rgba(58, 22, 91, 0.05)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #f6efff;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      color: #3a165b;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+    
+    .screen {
+      display: none;
+      flex-direction: column;
+      min-height: 100vh;
+      padding-bottom: 100px;
+      animation: fadeIn 300ms ease-in forwards;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .material-symbols-outlined.filled { font-variation-settings: 'FILL' 1; }
+
+    .serif-title { font-family: 'Noto Serif', serif; font-weight: 700; }
+    
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .fade-bottom {
+      mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+    }
+
+    .glass-circle {
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+  </style>
+</head>
+<body class="antialiased">
+
+  <div class="w-full max-w-[480px] mx-auto min-h-screen relative bg-[#f6efff] sm:border-x border-primary/5 overflow-x-hidden shadow-2xl">
+
+    <!-- Top App Bar -->
+    <header class="fixed top-0 w-full max-w-[480px] h-16 z-50 flex items-center justify-between px-6 bg-[#f6efff]/90 backdrop-blur-md">
+      <button onclick="Aura.goBack()" class="w-10 h-10 flex items-center justify-start rounded-full">
+        <span class="material-symbols-outlined text-primary text-[28px]" id="top-left-icon">menu</span>
+      </button>
+      <h1 class="serif-title text-[24px] text-primary tracking-tight">MoodFood</h1>
+      <button class="w-10 h-10 flex items-center justify-end rounded-full">
+        <span class="material-symbols-outlined text-primary text-[24px]">auto_awesome</span>
+      </button>
+    </header>
+
+    <!-- SCREEN 1: MAGICAL OPENING -->
+    <main id="screen-opening" class="screen !items-center !justify-center px-6 relative h-screen !pb-0">
+      
+      <!-- Food Images Collage Background -->
+      <div class="absolute inset-0 w-full h-[60%] top-16 overflow-hidden">
+        <!-- Salad -->
+        <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80" class="absolute top-[10%] left-[-10%] w-40 h-40 object-cover rounded-3xl shadow-soft transform -rotate-6">
+        <!-- Pancakes -->
+        <img src="https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&q=80" class="absolute top-[5%] right-[-10%] w-40 h-40 object-cover rounded-3xl shadow-soft transform rotate-12">
+        <!-- Chocolate Mousse -->
+        <img src="https://images.unsplash.com/photo-1587314168485-3236d6710814?w=400&q=80" class="absolute top-[45%] right-[5%] w-32 h-32 object-cover rounded-2xl shadow-soft transform -rotate-3">
+        
+        <!-- Large Frosted Glass Circle Center -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[60%] w-[320px] h-[320px] rounded-full glass-circle shadow-lg flex items-center justify-center p-8 z-10">
+          <!-- CHEF'S IMAGE AT THE CENTRE -->
+          <img src="images/stitch_chef.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3448/3448066.png'" class="w-full h-full object-contain opacity-90 drop-shadow-md" alt="Chef Stitch">
+        </div>
+      </div>
+
+      <div class="absolute bottom-32 text-center w-full px-6 flex flex-col items-center z-20">
+        <h2 class="serif-title text-[38px] text-primary leading-[1.1] mb-4 drop-shadow-sm">
+          What's Your<br>Culinary<br>Mood today?
+        </h2>
+        <p class="text-textMuted text-[16px] leading-relaxed max-w-[300px] mb-8">
+          Let the aura of your kitchen guide you through a blissful ritual of cooking.
+        </p>
+
+        <button onclick="Aura.navigate('mood')" class="bg-primary text-white rounded-full px-10 py-[18px] shadow-soft hover:scale-105 transition-transform flex items-center justify-center gap-2 w-[80%] max-w-[300px]">
+          <span class="font-semibold text-[16px] tracking-wide">Start Your Journey</span>
+          <span class="material-symbols-outlined text-[20px]">auto_awesome</span>
+        </button>
+      </div>
+    </main>
+
+
+    <!-- SCREEN 2: MOODS -->
+    <main id="screen-mood" class="screen pt-20 px-6 relative">
+      <div class="text-center mb-8">
+        <h2 class="serif-title text-[32px] text-primary mb-3">How are you feeling?</h2>
+        <p class="text-textMuted text-[14px] leading-relaxed max-w-[280px] mx-auto">
+          Let the ingredients dance to your current vibe. Choose a mood to reveal your culinary destiny.
+        </p>
+      </div>
+
+      <div id="mood-grid" class="grid grid-cols-2 md:grid-cols-2 gap-x-4 gap-y-6 mb-8 px-4">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- Why Expansion Panel -->
+      <div id="why-panel" class="hidden bg-panelBg rounded-3xl p-6 shadow-soft transition-all duration-500 mb-8 mx-2 border border-white/50">
+        <h3 id="why-heading" class="serif-title text-[20px] text-primary mb-3 flex items-center gap-2">
+          <span class="material-symbols-outlined text-[20px]">auto_awesome</span>
+          Why Joyful Today?
+        </h3>
+        
+        <p class="text-[13px] text-textMuted mb-6 leading-relaxed">
+          When you're feeling joyful, your palate seeks bright, acidic notes and colorful textures. We recommend citrus-infused starters and vibrant herb-forward dishes that mirror your internal radiance.
+        </p>
+        
+        <button onclick="Aura.revealRecipes()" class="w-full bg-primary text-white rounded-full py-4 font-semibold text-[14px] tracking-widest uppercase hover:scale-[1.02] transition-transform">
+          SEE RECIPES
+        </button>
+      </div>
+      
+      <!-- Cuisine Picker (Small horizontal scroll below the button) -->
+      <div id="cuisine-container" class="mb-6 hidden opacity-0 transition-opacity duration-500">
+        <p class="text-center text-[11px] font-bold tracking-widest uppercase text-textMuted mb-3">Or explore by Cuisine</p>
+        <div id="cuisine-row" class="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-2">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- Decorative Bottom Image (Orange Slice) -->
+      <div class="rounded-3xl overflow-hidden h-[200px] relative shadow-soft mx-2 mb-10 hidden" id="mood-bottom-image">
+        <img src="https://images.unsplash.com/photo-1582281295058-2936735e2365?w=800&q=80" class="w-full h-full object-cover opacity-90" alt="Citrus">
+        <!-- Floating FAB -->
+        <button onclick="Aura.navigate('discover')" class="absolute -bottom-4 -right-4 w-20 h-20 bg-accent text-primary rounded-full shadow-lg flex flex-col items-center justify-center transform -translate-x-6 -translate-y-6 hover:scale-110 transition-transform">
+          <span class="material-symbols-outlined text-[28px]">restaurant</span>
+          <span class="material-symbols-outlined text-[16px] absolute bottom-3">auto_awesome</span>
+        </button>
+      </div>
+    </main>
+
+
+    <!-- SCREEN 3: DISCOVER -->
+    <main id="screen-discover" class="screen pt-20 px-6 pb-24">
+      <div class="mb-6">
+        <span class="text-[11px] font-bold tracking-widest text-textMuted uppercase mb-1 block">CURRENT VIBE</span>
+        <h2 id="discover-header" class="serif-title text-[32px] text-primary">Sparkling Energy</h2>
+      </div>
+
+      <!-- Filter Chips -->
+      <div id="sub-filters" class="flex gap-3 overflow-x-auto no-scrollbar mb-8 pb-1">
+        <button class="bg-primary text-white text-[13px] font-medium px-5 py-2.5 rounded-full whitespace-nowrap shadow-sm">All Morning Sparks</button>
+        <button class="bg-white text-primary text-[13px] font-medium px-5 py-2.5 rounded-full whitespace-nowrap shadow-sm border border-transparent">Zesty Citrus</button>
+        <button class="bg-white text-primary text-[13px] font-medium px-5 py-2.5 rounded-full whitespace-nowrap shadow-sm border border-transparent">Indian Spice</button>
+      </div>
+      
+      <!-- Recipe Grid -->
+      <div id="discover-grid" class="flex flex-col gap-6">
+        <!-- Injected via JS -->
+      </div>
+    </main>
+
+
+    <!-- SCREEN 4: RECIPE MAGIC -->
+    <main id="screen-recipe" class="screen bg-white relative">
+      <div id="recipe-content" class="flex flex-col w-full pb-10">
+        
+        <!-- Hero Fade Area -->
+        <div class="relative w-full h-[400px] -mt-16 z-0">
+          <img id="rm-img" src="" class="w-full h-full object-cover fade-bottom" alt="Recipe">
+          
+          <div class="absolute bottom-6 left-6 right-6">
+            <span id="rm-origin" class="bg-panelBg text-primary text-[11px] font-bold tracking-widest px-4 py-1.5 rounded-full uppercase mb-3 inline-block">Dinner Ritual</span>
+            <h2 id="rm-title" class="serif-title text-[36px] text-primary leading-[1.1] mb-2">Midnight<br>Lavender Risotto</h2>
+            <p id="rm-subtitle" class="text-[14px] text-textMuted leading-snug">A meditative preparation that blends the floral notes of dried lavender with the comforting creaminess of arborio rice.</p>
+          </div>
+        </div>
+
+        <!-- Pill Stats Row -->
+        <div class="px-6 mt-4 flex flex-wrap justify-center gap-3 z-10 relative">
+          <div class="bg-white border border-primary/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-sm">
+            <span class="material-symbols-outlined text-[16px] text-primary">schedule</span>
+            <span id="rm-time" class="text-[11px] font-bold text-primary tracking-wide">45 mins Prep</span>
+          </div>
+          <div class="bg-white border border-primary/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-sm">
+            <span class="material-symbols-outlined text-[16px] text-primary">signal_cellular_alt</span>
+            <span id="rm-difficulty" class="text-[11px] font-bold text-primary tracking-wide">Intermediate</span>
+          </div>
+          <div class="bg-white border border-primary/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-sm">
+            <span class="material-symbols-outlined text-[16px] text-primary">spa</span>
+            <span id="rm-mood" class="text-[11px] font-bold text-primary tracking-wide">Serene Vibe</span>
+          </div>
+          <div class="bg-white border border-primary/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-sm">
+            <span class="material-symbols-outlined text-[16px] text-primary">eco</span>
+            <span id="rm-diet" class="text-[11px] font-bold text-primary tracking-wide">Vegetarian</span>
+          </div>
+        </div>
+
+        <!-- Ingredients -->
+        <div class="px-6 mt-8">
+          <div class="bg-white border border-primary/5 rounded-3xl p-6 shadow-card">
+            <h3 class="serif-title text-[20px] text-primary mb-6 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[20px]">receipt_long</span> Ingredients
+            </h3>
+            <ul id="rm-ingredients" class="space-y-4">
+              <!-- Injected -->
+            </ul>
+          </div>
+        </div>
+
+        <!-- Mid-Recipe Image -->
+        <div class="px-6 mt-6">
+          <img id="rm-mid-img" src="https://images.unsplash.com/photo-1615486171448-4df2b3db1e6b?w=800&q=80" class="w-full h-36 object-cover rounded-2xl shadow-sm" alt="Preparation">
+        </div>
+
+        <!-- Process -->
+        <div class="px-6 mt-8">
+          <div class="flex items-center gap-4 mb-6">
+            <h3 class="serif-title text-[22px] text-primary">The Process</h3>
+            <div class="flex-1 h-[3px] bg-gradient-to-r from-[#dfc4ff] to-transparent rounded-full"></div>
+          </div>
+          
+          <div id="rm-steps" class="space-y-8">
+            <!-- Injected -->
+          </div>
+        </div>
+
+        <!-- Magical Tip -->
+        <div class="px-6 mt-10">
+          <div class="bg-bgLight rounded-3xl p-8 relative overflow-hidden">
+            <!-- Star decoration -->
+            <span class="material-symbols-outlined text-[120px] text-white absolute -top-6 -right-6 transform rotate-12 drop-shadow-sm">auto_awesome</span>
+            
+            <div class="flex items-start gap-4 relative z-10">
+              <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-soft">
+                <span class="material-symbols-outlined text-white text-[20px]">auto_awesome</span>
+              </div>
+              <div>
+                <h4 class="serif-title text-[18px] text-primary mb-2">Magical Tip</h4>
+                <p id="rm-tip" class="text-[14px] text-textMuted italic leading-relaxed">"The secret to a truly magical risotto is the movement. Use a wooden spoon and stir in a rhythmic, circular motion."</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Bottom Right Floating Button inside Recipe -->
+      <div class="fixed bottom-24 right-6 z-40">
+        <button onclick="Aura.navigate('discover')" class="w-14 h-14 bg-accent text-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform">
+          <span class="material-symbols-outlined text-[24px]">restaurant</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 w-full max-w-[480px] h-20 bg-white/90 backdrop-blur-xl border-t border-primary/5 z-50 flex justify-around items-center px-2 pb-safe shadow-nav">
+      <button onclick="Aura.navigate('mood')" class="nav-item flex flex-col items-center justify-center gap-1 w-16 h-14 rounded-2xl transition-all" data-target="mood">
+        <span class="material-symbols-outlined nav-icon text-[26px] text-textMuted transition-colors">mood</span>
+        <span class="text-[10px] font-medium tracking-wide text-textMuted transition-colors">Moods</span>
+      </button>
+      <button onclick="Aura.navigate('discover')" class="nav-item flex flex-col items-center justify-center gap-1 w-16 h-14 rounded-2xl transition-all" data-target="discover">
+        <span class="material-symbols-outlined nav-icon text-[26px] text-textMuted transition-colors">menu_book</span>
+        <span class="text-[10px] font-medium tracking-wide text-textMuted transition-colors">Explore</span>
+      </button>
+      <button onclick="Aura.navigate('opening')" class="nav-item flex flex-col items-center justify-center gap-1 w-16 h-14 rounded-2xl transition-all" data-target="opening">
+        <span class="material-symbols-outlined nav-icon text-[26px] text-textMuted transition-colors">thermostat</span>
+        <span class="text-[10px] font-medium tracking-wide text-textMuted transition-colors">Magic</span>
+      </button>
+      <button onclick="Aura.navigate('recipe')" class="nav-item flex flex-col items-center justify-center gap-1 w-16 h-14 rounded-2xl transition-all" data-target="recipe">
+        <span class="material-symbols-outlined nav-icon text-[26px] text-textMuted transition-colors">restaurant</span>
+        <span class="text-[10px] font-medium tracking-wide text-textMuted transition-colors">Kitchen</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <script>
+    const Aura = {
+      state: {
+        currentScreen: 'opening',
+        mood: null,
+        cuisine: 'All Cuisines',
+        recipes: []
+      },
+
+      // Exactly matching the screenshots
+      moods: [
+        { id: 'JOYFUL', icon: 'sentiment_satisfied' },
+        { id: 'COZY', icon: 'cottage' },
+        { id: 'ENERGETIC', icon: 'bolt' },
+        { id: 'STRESS-FREE', icon: 'spa' },
+        { id: 'FOCUSED', icon: 'self_improvement' },
+        { id: 'CREATIVE', icon: 'brush' },
+        { id: 'ROMANTIC', icon: 'favorite_border' },
+        { id: 'ADVENTUROUS', icon: 'explore' }
+      ],
+
+      cuisines: ['All Cuisines', 'Indian', 'Italian', 'Mediterranean', 'American'],
+
+      init() {
+        this.renderMoodGrid();
+        this.renderCuisineRow();
+        this.navigate('opening');
+      },
+
+      goBack() {
+        if(this.state.currentScreen === 'recipe') this.navigate('discover');
+        else if(this.state.currentScreen === 'discover') this.navigate('mood');
+        else this.navigate('opening');
+      },
+
+      navigate(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const target = document.getElementById(`screen-${screenId}`);
+        if(target) target.classList.add('active');
+        this.state.currentScreen = screenId;
+        
+        // Top Icon update
+        const topIcon = document.getElementById('top-left-icon');
+        if(screenId === 'opening') topIcon.innerText = 'menu';
+        else topIcon.innerText = 'arrow_back';
+
+        this.updateBottomNav(screenId);
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      },
+
+      updateBottomNav(screenId) {
+        document.querySelectorAll('.nav-item').forEach(item => {
+          const icon = item.querySelector('.nav-icon');
+          const text = item.querySelector('span:nth-child(2)');
+          const target = item.dataset.target;
+          
+          item.classList.remove('bg-[#ede4ff]');
+          icon.classList.remove('text-primary', 'filled');
+          text.classList.remove('text-primary');
+          
+          icon.classList.add('text-textMuted');
+          text.classList.add('text-textMuted');
+          
+          if (target === screenId || (screenId === 'opening' && target === 'opening')) {
+            item.classList.add('bg-[#ede4ff]');
+            icon.classList.add('text-primary', 'filled');
+            text.classList.add('text-primary');
+            icon.classList.remove('text-textMuted');
+            text.classList.remove('text-textMuted');
+          }
+        });
+      },
+
+      renderMoodGrid() {
+        const grid = document.getElementById('mood-grid');
+        grid.innerHTML = this.moods.map(m => `
+          <button onclick="Aura.selectMood('${m.id}')" id="mood-btn-${m.id}" class="flex flex-col items-center justify-center gap-3 group w-full mb-2">
+            <div class="w-[100px] h-[100px] rounded-full bg-bubbleBg flex items-center justify-center transition-all">
+              <span class="material-symbols-outlined text-[32px] text-primary">${m.icon}</span>
+            </div>
+            <span class="text-[11px] font-bold tracking-widest text-primary uppercase">${m.id}</span>
+          </button>
+        `).join('');
+      },
+
+      renderCuisineRow() {
+        const row = document.getElementById('cuisine-row');
+        row.innerHTML = this.cuisines.map(c => {
+          const isSelected = this.state.cuisine === c;
+          return `
+          <button onclick="Aura.selectCuisine('${c}')" class="whitespace-nowrap px-5 py-2 rounded-full font-medium text-[13px] transition-all shadow-sm ${isSelected ? 'bg-primary text-white' : 'bg-white text-primary border border-primary/10'}">
+            ${c}
+          </button>
+        `}).join('');
+      },
+
+      selectMood(id) {
+        this.state.mood = id;
+        document.querySelectorAll('.mood-bubble > div').forEach(div => {
+          div.classList.replace('bg-white', 'bg-bubbleBg');
+          div.classList.remove('shadow-card');
+        });
+        const selectedBtn = document.getElementById(`mood-btn-${id}`).querySelector('div');
+        selectedBtn.classList.replace('bg-bubbleBg', 'bg-white');
+        selectedBtn.classList.add('shadow-card');
+
+        const panel = document.getElementById('why-panel');
+        document.getElementById('why-heading').innerHTML = `<span class="material-symbols-outlined text-[20px]">auto_awesome</span> Why ${id} Today?`;
+        
+        panel.classList.remove('hidden');
+        document.getElementById('cuisine-container').classList.remove('hidden');
+        document.getElementById('cuisine-container').classList.remove('opacity-0');
+        document.getElementById('mood-bottom-image').classList.remove('hidden');
+        
+        setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+      },
+
+      selectCuisine(c) {
+        this.state.cuisine = c;
+        this.renderCuisineRow();
+      },
+
+      async revealRecipes() {
+        this.navigate('discover');
+        if(this.state.mood) {
+          document.getElementById('discover-header').innerText = this.state.mood === 'JOYFUL' ? 'Sparkling Energy' : `${this.state.mood} Recipes`;
+        }
+
+        if (CONFIG.GEMINI_API_KEY && CONFIG.GEMINI_API_KEY.trim() !== '') {
+          const grid = document.getElementById('discover-grid');
+          grid.innerHTML = `<div class="flex flex-col items-center justify-center p-10 mt-10"><span class="material-symbols-outlined text-[40px] text-primary animate-spin mb-4" style="animation-duration: 2s;">refresh</span><p class="text-primary text-[14px] font-medium text-center leading-relaxed">Conjuring magical recipes<br>with Google Gemini...</p></div>`;
+          
+          try {
+            const prompt = `You are the Magical Mood Chef. A user feels ${this.state.mood} and prefers ${this.state.cuisine} cuisine. Generate exactly 3 recipes as a JSON array. Each object MUST exactly match this structure: { "id": "g1", "badge": "Dinner Ritual", "tag": "MAGIC", "name": "Recipe Name", "description": "Short desc", "time": "30 mins Prep", "difficulty": "Easy", "vibe": "Happy", "diet": "Vegan", "highlight": "Fresh", "icon": "spa", "img": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80", "midImg": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80", "tip": "Chef tip", "ingredients": [{"item": "Carrot", "amount": "1 cup"}], "steps": [{"num": 1, "title": "Chop", "desc": "Chop it"}] }. Return ONLY a valid JSON array. Do NOT wrap it in markdown code blocks.`;
+            
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${CONFIG.GEMINI_API_KEY}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+              })
+            });
+            
+            if (!res.ok) throw new Error('Gemini API Error');
+            const data = await res.json();
+            let rawText = data.candidates[0].content.parts[0].text;
+            // Robustly extract the JSON array in case Gemini adds extra text
+            const match = rawText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+            if (!match) throw new Error("Could not extract JSON array from Gemini response");
+            
+            this.state.recipes = JSON.parse(match[0]);
+            this.renderRecipes();
+          } catch (e) {
+            console.error("Gemini API Error, using fallback:", e);
+            this.state.recipes = FallbackData.get(this.state.mood, this.state.cuisine);
+            this.renderRecipes();
+          }
+        } else {
+          this.state.recipes = FallbackData.get(this.state.mood, this.state.cuisine);
+          this.renderRecipes();
+        }
+      },
+
+      renderRecipes() {
+        const grid = document.getElementById('discover-grid');
+        grid.innerHTML = this.state.recipes.map((r, i) => `
+          <div class="bg-white rounded-[2rem] overflow-hidden shadow-card flex flex-col cursor-pointer pb-5 border border-primary/5" onclick="Aura.openRecipe(${i})">
+            <div class="h-[220px] overflow-hidden relative">
+              <img src="${r.img}" class="w-full h-full object-cover" alt="${r.name}">
+              <!-- Text overlay like "Sunrise Citrus & Mint Harvest" for the first card if needed, but we put it below in standard layout to match others -->
+              ${r.id==='r1' ? `<div class="absolute inset-0 bg-black/30 flex flex-col justify-center px-6 pt-10"><h3 class="serif-title text-[24px] text-white leading-tight mb-2">${r.name}</h3><p class="text-[12px] text-white/90 leading-snug">${r.description}</p></div>` : ''}
+            </div>
+            ${r.id!=='r1' ? `
+            <div class="px-6 pt-5">
+              <span class="text-[10px] font-bold tracking-widest text-textMuted uppercase mb-1 block">${r.tag}</span>
+              <h3 class="serif-title text-[20px] text-primary mb-4">${r.name}</h3>
+              <div class="flex items-center justify-between border-t border-primary/10 pt-4">
+                <div class="flex items-center gap-2 text-[12px] font-medium text-textMuted">
+                  <span class="material-symbols-outlined text-[16px]">${r.icon}</span>
+                  ${r.highlight}
+                </div>
+                <span class="material-symbols-outlined text-primary text-[20px]">bookmark_border</span>
+              </div>
+            </div>
+            ` : ''}
+          </div>
+        `).join('');
+      },
+
+      openRecipe(index) {
+        const recipe = this.state.recipes[index];
+        
+        document.getElementById('rm-img').src = recipe.img;
+        document.getElementById('rm-mid-img').src = recipe.midImg || "https://images.unsplash.com/photo-1615486171448-4df2b3db1e6b?w=800&q=80";
+        document.getElementById('rm-title').innerHTML = recipe.name.replace(' ', '<br>');
+        document.getElementById('rm-subtitle').innerText = recipe.description;
+        document.getElementById('rm-origin').innerText = recipe.badge;
+        document.getElementById('rm-time').innerText = recipe.time;
+        document.getElementById('rm-difficulty').innerText = recipe.difficulty;
+        document.getElementById('rm-mood').innerText = recipe.vibe;
+        document.getElementById('rm-diet').innerText = recipe.diet;
+        document.getElementById('rm-tip').innerText = `"${recipe.tip}"`;
+
+        const ingList = document.getElementById('rm-ingredients');
+        ingList.innerHTML = recipe.ingredients.map(ing => `
+          <li class="flex justify-between items-center py-2.5 border-b border-primary/5 last:border-0">
+            <span class="text-[14px] text-textMuted">${ing.item}</span>
+            <span class="text-[14px] font-bold text-primary">${ing.amount}</span>
+          </li>
+        `).join('');
+
+        const stepsList = document.getElementById('rm-steps');
+        stepsList.innerHTML = recipe.steps.map(step => `
+          <div class="flex gap-4">
+            <div class="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center serif-title text-[16px] mt-1">
+              ${step.num}
+            </div>
+            <div>
+              <h4 class="serif-title text-[18px] text-primary mb-2">${step.title}</h4>
+              <p class="text-[14px] text-textMuted leading-relaxed">${step.desc}</p>
+            </div>
+          </div>
+        `).join('');
+
+        this.navigate('recipe');
+      }
+    };
+
+    // EXACT FALLBACK DATA TO MATCH SCREENSHOTS + INDIAN CUISINE
+    const FallbackData = {
+      defaultList: [
+        { id: 'r1', badge: 'Morning Ritual', tag: 'STARTER', name: 'Sunrise Citrus & Mint Harvest', description: 'Awaken your senses with a symphony of blood orange, fresh garden mint, and toasted pine nuts.', time: '15 mins Prep', difficulty: 'Easy', vibe: 'High Energy', diet: 'Vegan', highlight: 'High Vitality', icon: 'bolt', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80', midImg: 'https://images.unsplash.com/photo-1582281295058-2936735e2365?w=800&q=80', tip: "Use the freshest mint leaves you can find.", ingredients: [{item: "Blood Oranges", amount: "2 units"}, {item: "Fresh Mint", amount: "1/4 cup"}, {item: "Pine Nuts", amount: "2 tbsp"}], steps: [{num: 1, title: "Peel & Slice", desc: "Remove the skin from the oranges."}, {num: 2, title: "Garnish", desc: "Top with mint and toasted pine nuts."}] },
+        
+        { id: 'r2', badge: 'Refresher', tag: 'REFRESHER', name: 'Electric Dragon Bowl', description: 'A vibrant pink dragonfruit smoothie bowl topped with kiwi and chia seeds.', time: '10 mins Prep', difficulty: 'Easy', vibe: 'Sparkling Energy', diet: 'Vegan', highlight: 'High Vitality', icon: 'bolt', img: 'https://images.unsplash.com/photo-1556881286-fc6915169721?w=800&q=80', midImg: 'https://images.unsplash.com/photo-1505253758473-96b7015fcd40?w=800&q=80', tip: "Freeze the dragonfruit overnight for the thickest texture.", ingredients: [{item: "Frozen Pitaya", amount: "1 cup"}, {item: "Kiwi", amount: "1 unit"}, {item: "Chia Seeds", amount: "1 tbsp"}], steps: [{num: 1, title: "Blend", desc: "Blend the frozen pitaya with a splash of almond milk until thick."}, {num: 2, title: "Decorate", desc: "Top carefully with sliced kiwi and a sprinkle of chia seeds."}] },
+        
+        { id: 'r3', badge: 'Comfort Bowl', tag: 'COMFORTING BLISS', name: 'Golden Zen Bowl', description: 'Nourishing grains paired with roasted vegetables and a golden turmeric swoop.', time: '30 mins Prep', difficulty: 'Medium', vibe: 'Cozy', diet: 'Vegetarian', highlight: 'Comforting Bliss', icon: 'spa', img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80', midImg: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80', tip: "Roast the carrots until slightly charred for deeper flavor.", ingredients: [{item: "Quinoa", amount: "1 cup"}, {item: "Roasted Carrots", amount: "1/2 cup"}, {item: "Turmeric Hummus", amount: "2 tbsp"}], steps: [{num: 1, title: "Roast", desc: "Roast the vegetables."}, {num: 2, title: "Assemble", desc: "Plate the grains and swoop the hummus."}] },
+        
+        { id: 'r4', badge: 'Morning Magic', tag: 'MORNING MAGIC', name: 'Whipped Jade Toast', description: 'Artisanal toast topped with whipped avocado, microgreens, and sliced radish.', time: '10 mins Prep', difficulty: 'Easy', vibe: 'Focused', diet: 'Vegan', highlight: 'Morning Magic', icon: 'wb_sunny', img: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=800&q=80', midImg: 'https://images.unsplash.com/photo-1490818387583-1b5ba4597d66?w=800&q=80', tip: "Use a sourdough loaf with a thick crust for the best crunch.", ingredients: [{item: "Sourdough Toast", amount: "1 slice"}, {item: "Avocado", amount: "1/2 unit"}, {item: "Radish", amount: "1 unit"}, {item: "Microgreens", amount: "Handful"}], steps: [{num: 1, title: "Toast", desc: "Toast the sourdough until golden."}, {num: 2, title: "Whip", desc: "Whip the avocado with lemon juice."}, {num: 3, title: "Top", desc: "Layer avocado, thin radish slices, and microgreens."}] },
+        
+        { id: 'r5', badge: 'Deep Focus', tag: 'DEEP FOCUS', name: 'Emerald Sea Linguine', description: 'Steaming hot linguine enveloped in a rich, vibrant green pesto sauce.', time: '20 mins Prep', difficulty: 'Medium', vibe: 'Creative', diet: 'Vegetarian', highlight: 'Deep Focus', icon: 'self_improvement', img: 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800&q=80', midImg: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80', tip: "Save pasta water to emulsify the pesto into a creamy sauce.", ingredients: [{item: "Linguine", amount: "200g"}, {item: "Fresh Basil", amount: "2 cups"}, {item: "Parmesan", amount: "1/2 cup"}, {item: "Olive Oil", amount: "1/4 cup"}], steps: [{num: 1, title: "Boil Pasta", desc: "Cook pasta in heavily salted water."}, {num: 2, title: "Blend Pesto", desc: "Blend basil, cheese, pine nuts, and oil."}, {num: 3, title: "Toss", desc: "Toss the pasta with pesto and pasta water."}] },
+
+        { id: 'r6', badge: 'Dinner Ritual', tag: 'MEDITATIVE', name: 'Midnight Lavender Risotto', description: 'A meditative preparation that blends the floral notes of dried lavender with the comforting creaminess of arborio rice.', time: '45 mins Prep', difficulty: 'Intermediate', vibe: 'Serene Vibe', diet: 'Vegetarian', highlight: 'Serene Vibe', icon: 'spa', img: 'https://images.unsplash.com/photo-1623961990059-28356e226a67?w=800&q=80', midImg: 'https://images.unsplash.com/photo-1615486171448-4df2b3db1e6b?w=800&q=80', tip: "The secret to a truly magical risotto is the movement. Use a wooden spoon and stir in a rhythmic, circular motion.", ingredients: [{item: "Arborio Rice", amount: "1.5 cups"}, {item: "Vegetable Broth", amount: "4 cups"}, {item: "Dried Lavender", amount: "1 tsp"}, {item: "Shallots, minced", amount: "2 units"}, {item: "Parmesan", amount: "1/2 cup"}], steps: [{num: 1, title: "Simmer the Broth", desc: "Heat the vegetable broth in a small saucepan over medium-low heat. Add the dried lavender flowers and let them steep gently. This infuses the base with a subtle floral essence that will carry through the entire dish."}, {num: 2, title: "Sauté the Aromatics", desc: "In a heavy-bottomed pan, melt a knob of butter with a drizzle of olive oil. Sauté the minced shallots until they become translucent and fragrant, taking care not to brown them."}, {num: 3, title: "The Toasting Ritual", desc: "Add the arborio rice to the pan. Stir constantly for 2-3 minutes until the edges of the grains are translucent but the centers are still white. You should smell a faint nutty aroma."}] }
+      ],
+
+      indianList: [
+        { id: 'i1', badge: 'Dinner Ritual', tag: 'ROYAL FEAST', name: 'Paneer Butter Masala', description: 'Soft cottage cheese cubes cooked in a rich, creamy, and mildly sweet tomato gravy.', time: '30 mins Prep', difficulty: 'Intermediate', vibe: 'Joyful', diet: 'Vegetarian', highlight: 'Rich & Creamy', icon: 'restaurant', img: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc0?w=800&q=80', midImg: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&q=80', tip: "Soak the paneer in warm water for 15 minutes before adding it to the gravy to ensure it stays incredibly soft.", ingredients: [{item: "Paneer Cubes", amount: "250g"}, {item: "Tomato Puree", amount: "1.5 cups"}, {item: "Cashew Paste", amount: "1/4 cup"}, {item: "Butter", amount: "2 tbsp"}, {item: "Garam Masala", amount: "1 tsp"}], steps: [{num: 1, title: "Sauté the Base", desc: "Heat butter in a pan. Add the tomato puree and cook until the oil starts to separate from the sides."}, {num: 2, title: "Enrich the Gravy", desc: "Stir in the cashew paste and garam masala. Let it simmer until the gravy becomes rich and thick."}, {num: 3, title: "Add Paneer", desc: "Gently fold in the paneer cubes. Simmer for 5 minutes. Finish with a swirl of fresh cream."}] },
+        
+        { id: 'i2', badge: 'Comfort Bowl', tag: 'SOUL WARMING', name: 'Dal Makhani', description: 'Overnight simmered black lentils cooked with butter and cream for the ultimate comforting bowl.', time: '40 mins Prep', difficulty: 'Medium', vibe: 'Cozy', diet: 'Vegetarian', highlight: 'Soul Warming', icon: 'spa', img: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&q=80', midImg: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&q=80', tip: "The key to authentic Dal Makhani is slow cooking. The longer it simmers on low heat, the creamier the texture becomes.", ingredients: [{item: "Whole Black Lentils", amount: "1 cup"}, {item: "Kidney Beans", amount: "1/4 cup"}, {item: "Butter", amount: "3 tbsp"}, {item: "Heavy Cream", amount: "1/4 cup"}], steps: [{num: 1, title: "Boil Lentils", desc: "Pressure cook the soaked lentils and kidney beans until extremely soft and mashable."}, {num: 2, title: "Temper", desc: "Prepare a tempering of butter, garlic, and tomato puree. Cook until fragrant."}, {num: 3, title: "Simmer & Cream", desc: "Mix the tempering with the lentils. Simmer on low heat for 30 minutes, mashing slightly. Finish with cream."}] },
+
+        { id: 'i3', badge: 'Weekend Magic', tag: 'SPICE JOURNEY', name: 'Awadhi Chicken Biryani', description: 'Fragrant basmati rice layered with marinated chicken, saffron, and aromatic spices.', time: '60 mins Prep', difficulty: 'Hard', vibe: 'Adventurous', diet: 'High Protein', highlight: 'Spice Journey', icon: 'local_fire_department', img: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&q=80', midImg: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&q=80', tip: "Do not open the lid while the biryani is cooking on 'dum' (steam). Sealing the edges with dough traps the aromas inside.", ingredients: [{item: "Basmati Rice", amount: "2 cups"}, {item: "Chicken pieces", amount: "500g"}, {item: "Yogurt", amount: "1/2 cup"}, {item: "Saffron strands", amount: "1 pinch"}, {item: "Biryani Masala", amount: "2 tbsp"}], steps: [{num: 1, title: "Marinate", desc: "Marinate the chicken in yogurt, biryani masala, and ginger-garlic paste for at least 2 hours."}, {num: 2, title: "Parboil Rice", desc: "Boil the basmati rice with whole spices until it is exactly 70% cooked. Drain the water."}, {num: 3, title: "Layer and Dum", desc: "In a heavy-bottomed pot, layer the chicken and rice. Drizzle saffron milk over the top. Seal tightly and cook on low heat for 25 minutes."}] }
+      ],
+
+      get(mood, cuisineFilter) {
+        if (cuisineFilter === 'Indian') return this.indianList;
+        return this.defaultList;
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      Aura.init();
+    });
+  </script>
+</body>
+</html>
